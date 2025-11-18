@@ -1,0 +1,48 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+@section Scripts {
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/topichub")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("ReceiveTopicStatus", (topicName, status) => {
+            console.log(`Topic: ${topicName}, Status: ${status}`);
+            // Update UI with topic status
+        });
+
+        connection.on("ReceiveTopicAction", (topicName, action, data) => {
+            console.log(`Topic: ${topicName}, Action: ${action}`, data);
+            // Handle topic action
+        });
+
+        connection.on("UserConnected", (connectionId) => {
+            console.log(`User connected: ${connectionId}`);
+        });
+
+        connection.on("UserDisconnected", (connectionId) => {
+            console.log(`User disconnected: ${connectionId}`);
+        });
+
+        connection.start().catch(err => console.error(err));
+
+        // Functions to send messages to the hub
+        function sendTopicStatus(topicName, status) {
+            connection.invoke("SendTopicStatus", topicName, status).catch(err => console.error(err));
+        }
+
+        function sendTopicAction(topicName, action, data = null) {
+            connection.invoke("SendTopicAction", topicName, action, data).catch(err => console.error(err));
+        }
+    </script>
+}
