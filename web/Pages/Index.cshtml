@@ -9,40 +9,95 @@
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
 
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Topic Messages</h5>
+                </div>
+                <div class="card-body">
+                    <div id="messageDisplay" style="height: 400px; border: 1px solid #ddd; padding: 15px; overflow-y: auto; background-color: #f9f9f9; margin-bottom: 15px;">
+                        <p class="text-muted">Waiting for messages...</p>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="messageInput" class="form-control" placeholder="Enter your message..." />
+                        <button class="btn btn-primary" id="sendBtn" type="button">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/topichub")
-            .withAutomaticReconnect()
-            .build();
+        // Wait for DOM to be ready and SignalR to be loaded
+        document.addEventListener("DOMContentLoaded", function() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/topichub")
+                .withAutomaticReconnect()
+                .build();
 
-        connection.on("ReceiveTopicStatus", (topicName, status) => {
-            console.log(`Topic: ${topicName}, Status: ${status}`);
-            // Update UI with topic status
+            const messageDisplay = document.getElementById("messageDisplay");
+            const messageInput = document.getElementById("messageInput");
+            const sendBtn = document.getElementById("sendBtn");
+
+            connection.on("ReceiveTopicStatus", (topicName, status) => {
+                console.log(`Topic: ${topicName}, Status: ${status}`);
+                displayMessage(topicName, status);
+            });
+
+            connection.on("ReceiveTopicAction", (topicName, action, data) => {
+                console.log(`Topic: ${topicName}, Action: ${action}`, data);
+            });
+
+            connection.on("UserConnected", (connectionId) => {
+                console.log(`User connected: ${connectionId}`);
+            });
+
+            connection.on("UserDisconnected", (connectionId) => {
+                console.log(`User disconnected: ${connectionId}`);
+            });
+
+            connection.start().catch(err => console.error(err));
+
+            // Display message in the message area
+            function displayMessage(topicName, message) {
+                if (messageDisplay.querySelector(".text-muted")) {
+                    messageDisplay.innerHTML = "";
+                }
+                const messageElement = document.createElement("div");
+                messageElement.className = "mb-2 p-2 bg-white rounded border-start border-primary";
+                messageElement.innerHTML = `<strong>${topicName}:</strong> ${message}`;
+                messageDisplay.appendChild(messageElement);
+                messageDisplay.scrollTop = messageDisplay.scrollHeight;
+            }
+
+            // Send message on button click
+            sendBtn.addEventListener("click", () => {
+                const message = messageInput.value.trim();
+                if (message) {
+                    sendTopicStatus("User", message);
+                    messageInput.value = "";
+                }
+            });
+
+            // Send message on Enter key
+            messageInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    sendBtn.click();
+                }
+            });
+
+            // Functions to send messages to the hub
+            function sendTopicStatus(topicName, status) {
+                connection.invoke("SendTopicStatus", topicName, status).catch(err => console.error(err));
+            }
+
+            function sendTopicAction(topicName, action, data = null) {
+                connection.invoke("SendTopicAction", topicName, action, data).catch(err => console.error(err));
+            }
         });
-
-        connection.on("ReceiveTopicAction", (topicName, action, data) => {
-            console.log(`Topic: ${topicName}, Action: ${action}`, data);
-            // Handle topic action
-        });
-
-        connection.on("UserConnected", (connectionId) => {
-            console.log(`User connected: ${connectionId}`);
-        });
-
-        connection.on("UserDisconnected", (connectionId) => {
-            console.log(`User disconnected: ${connectionId}`);
-        });
-
-        connection.start().catch(err => console.error(err));
-
-        // Functions to send messages to the hub
-        function sendTopicStatus(topicName, status) {
-            connection.invoke("SendTopicStatus", topicName, status).catch(err => console.error(err));
-        }
-
-        function sendTopicAction(topicName, action, data = null) {
-            connection.invoke("SendTopicAction", topicName, action, data).catch(err => console.error(err));
-        }
     </script>
 }
