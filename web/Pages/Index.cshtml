@@ -12,6 +12,9 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-8 offset-md-2">
+            <div class="mb-3">
+                <a asp-page="/Iot" class="btn btn-info">Go to IoT Messages</a>
+            </div>
             <div class="card">
                 <div class="card-header">
                     <h5>Topic Messages</h5>
@@ -32,7 +35,6 @@
 
 @section Scripts {
     <script>
-        // Wait for DOM to be ready and SignalR to be loaded
         document.addEventListener("DOMContentLoaded", function() {
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/topichub")
@@ -62,7 +64,6 @@
 
             connection.start().catch(err => console.error(err));
 
-            // Display message in the message area
             function displayMessage(topicName, message) {
                 if (messageDisplay.querySelector(".text-muted")) {
                     messageDisplay.innerHTML = "";
@@ -74,7 +75,6 @@
                 messageDisplay.scrollTop = messageDisplay.scrollHeight;
             }
 
-            // Send message on button click
             sendBtn.addEventListener("click", () => {
                 const message = messageInput.value.trim();
                 if (message) {
@@ -83,14 +83,12 @@
                 }
             });
 
-            // Send message on Enter key
             messageInput.addEventListener("keypress", (e) => {
                 if (e.key === "Enter") {
                     sendBtn.click();
                 }
             });
 
-            // Functions to send messages to the hub
             function sendTopicStatus(topicName, status) {
                 connection.invoke("SendTopicStatus", topicName, status).catch(err => console.error(err));
             }

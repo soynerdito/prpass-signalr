@@ -1,0 +1,109 @@
+@page
+@model IotModel
+@{
+    ViewData["Title"] = "IoT Messages";
+}
+
+<div class="text-center mb-4">
+    <h1 class="display-4">IoT Messages</h1>
+    <p>Send and receive IoT messages with destination, action, and source</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h5>IoT Message Display</h5>
+            </div>
+            <div class="card-body">
+                <div id="iotDisplay" style="height: 400px; border: 1px solid #ddd; padding: 15px; overflow-y: auto; background-color: #f0f8ff; margin-bottom: 15px;">
+                    <p class="text-muted">Waiting for IoT messages...</p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" id="iotDestination" class="form-control" placeholder="Destination" />
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="iotAction" class="form-control" placeholder="Action" />
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="iotSource" class="form-control" placeholder="Source" />
+                    </div>
+                </div>
+                <button class="btn btn-success" id="sendIotBtn" type="button">Send IoT Message</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/topichub")
+                .withAutomaticReconnect()
+                .build();
+
+            const iotDisplay = document.getElementById("iotDisplay");
+            const iotDestination = document.getElementById("iotDestination");
+            const iotAction = document.getElementById("iotAction");
+            const iotSource = document.getElementById("iotSource");
+            const sendIotBtn = document.getElementById("sendIotBtn");
+
+            connection.on("ReceiveIotMessage", (message) => {
+                console.log("IoT Message:", message);
+                displayIotMessage(message);
+            });
+
+            connection.on("UserConnected", (connectionId) => {
+                console.log(`User connected: ${connectionId}`);
+            });
+
+            connection.on("UserDisconnected", (connectionId) => {
+                console.log(`User disconnected: ${connectionId}`);
+            });
+
+            connection.start().catch(err => console.error(err));
+
+            function displayIotMessage(message) {
+                if (iotDisplay.querySelector(".text-muted")) {
+                    iotDisplay.innerHTML = "";
+                }
+                const messageElement = document.createElement("div");
+                messageElement.className = "mb-2 p-2 bg-white rounded border-start border-success";
+                messageElement.innerHTML = `
+                    <strong>Destination:</strong> ${message.destination}<br/>
+                    <strong>Action:</strong> ${message.action}<br/>
+                    <strong>Source:</strong> ${message.source}
+                `;
+                iotDisplay.appendChild(messageElement);
+                iotDisplay.scrollTop = iotDisplay.scrollHeight;
+            }
+
+            sendIotBtn.addEventListener("click", () => {
+                const destination = iotDestination.value.trim();
+                const action = iotAction.value.trim();
+                const source = iotSource.value.trim();
+
+                if (destination && action && source) {
+                    const iotMessage = {
+                        destination: destination,
+                        action: action,
+                        source: source
+                    };
+                    sendIotMessage(iotMessage);
+                    iotDestination.value = "";
+                    iotAction.value = "";
+                    iotSource.value = "";
+                } else {
+                    alert("Please fill in all IoT message fields");
+                }
+            });
+
+            function sendIotMessage(message) {
+                connection.invoke("SendIotMessage", message).catch(err => console.error(err));
+            }
+        });
+    </script>
+}

@@ -14,6 +14,11 @@ public class TopicHub : Hub
         await Clients.All.SendAsync("ReceiveTopicAction", topicName, action, data);
     }
 
+    public async Task SendIotMessage(IotMessage message)
+    {
+        await Clients.All.SendAsync("ReceiveIotMessage", message);
+    }
+
     public override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();
@@ -25,4 +30,11 @@ public class TopicHub : Hub
         await base.OnDisconnectedAsync(exception);
         await Clients.All.SendAsync("UserDisconnected", Context.ConnectionId);
     }
+}
+
+public class IotMessage
+{
+    public string Destination { get; set; }
+    public string Action { get; set; }
+    public string Source { get; set; }
 }
